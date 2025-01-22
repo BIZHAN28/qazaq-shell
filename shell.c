@@ -1,27 +1,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/time.h>
 #include <time.h>
 
 #define MAX_INPUT 1024
-#define MAX_ARGS 64
 #define MAX_COMMANDS 10
 
 typedef struct {
     char name[64];
-    int cost;       // Цена команды || Пәрменнің бағасы
-    int unlocked;   // Флаг разблокировки || Ашылған күйдің жалауы
+    int health;
+    int damage;
+    int coins_reward;
+    float effect_chance;
+} Enemy;
+
+typedef struct {
+    char name[64];
+    int cost;
+    int unlocked;
 } Command;
 
 Command available_commands[MAX_COMMANDS];
 int command_count = 0;
-int player_coins = 0; // Монеты игрока || Ойыншының тиындары
+int player_health = 100;
+int player_coins = 0;
+int player_frozen = 0;    // Состояние "заморожен"
+int player_burning = 0;   // Состояние "горит"
 
-// Инициализация доступных команд || Қолжетімді пәрмендерді инициализациялау
+// Инициализация доступных команд
 void initialize_commands() {
     strcpy(available_commands[0].name, "ls");
     available_commands[0].cost = 10;
@@ -35,129 +41,137 @@ void initialize_commands() {
     available_commands[2].cost = 5;
     available_commands[2].unlocked = 0;
 
-    command_count = 3; // Количество команд || Пәрмендер саны
+    command_count = 3;
 }
 
-// Проверка, разблокирована ли команда || Пәрменнің ашылғанын тексеру
-int is_command_unlocked(char *command) {
-    for (int i = 0; i < command_count; i++) {
-        if (strcmp(available_commands[i].name, command) == 0) {
-            return available_commands[i].unlocked;
-        }
+// Генерация случайного врага
+Enemy generate_enemy(char *location) {
+    Enemy enemy;
+    int type = rand() % 3; // 0: Миньон, 1: Элементаль, 2: Обычный монстр
+
+    if (type == 0) {
+        strcpy(enemy.name, "Миньон");
+        enemy.health = 20 + rand() % 10;
+        enemy.damage = 5 + rand() % 5;
+        enemy.coins_reward = 5 + rand() % 5;
+        enemy.effect_chance = strcmp(location, "Ледяная") == 0 ? 0.2 : strcmp(location, "Огненная") == 0 ? 0.1 : 0.05;
+    } else if (type == 1) {
+        strcpy(enemy.name, "Элементаль");
+        enemy.health = 25 + rand() % 10;
+        enemy.damage = 10 + rand() % 5;
+        enemy.coins_reward = 10 + rand() % 5;
+        enemy.effect_chance = strcmp(location, "Ледяная") == 0 ? 0.5 : strcmp(location, "Огненная") == 0 ? 0.3 : 0.1;
+    } else {
+        strcpy(enemy.name, "Обычный монстр");
+        enemy.health = 30 + rand() % 10;
+        enemy.damage = 7 + rand() % 7;
+        enemy.coins_reward = 8 + rand() % 7;
+        enemy.effect_chance = strcmp(location, "Ледяная") == 0 ? 0.35 : strcmp(location, "Огненная") == 0 ? 0.2 : 0.07;
     }
-    return 0;
+
+    return enemy;
 }
 
-// Покупка команды || Пәрменді сатып алу
+// Покупка команды
 void buy_command(char *command) {
     for (int i = 0; i < command_count; i++) {
         if (strcmp(available_commands[i].name, command) == 0) {
             if (available_commands[i].unlocked) {
-                printf("Команда %s уже разблокирована! || %s пәрмені қазірдің өзінде ашылған!\n", command, command);
+                printf("Команда %s уже разблокирована!\n", command);
                 return;
             }
             if (player_coins >= available_commands[i].cost) {
                 player_coins -= available_commands[i].cost;
                 available_commands[i].unlocked = 1;
-                printf("Команда %s разблокирована! || %s пәрмені ашылды!\n", command, command);
+                printf("Команда %s разблокирована!\n", command);
             } else {
-                printf("Недостаточно монет для разблокировки команды %s! || %s пәрменін ашуға тиын жеткіліксіз!\n", command, command);
+                printf("Недостаточно монет для разблокировки команды %s!\n", command);
             }
             return;
         }
     }
-    printf("Команда %s не существует! || %s пәрмені жоқ!\n", command, command);
+    printf("Команда %s не существует!\n", command);
 }
 
-// Простая текстовая игра || Қарапайым мәтіндік ойын
-void dungeon_crawler_game() {
-    printf("Добро пожаловать в подземелье! || Зынданға қош келдіңіз!\n");
-    printf("Вы встретили монстра! || Сіз құбыжықты кездестірдіңіз!\n");
+// Сражение с врагом
+void fight_enemy(Enemy enemy, char *location) {
+    printf("Вы встретили врага: %s (Здоровье: %d, Урон: %d)!\n", enemy.name, enemy.health, enemy.damage);
 
-    int monster_health = 20 + rand() % 10; // Здоровье монстра || Құбыжықтың денсаулығы
-    int player_health = 30;
-    int damage, monster_damage;
-
-    while (monster_health > 0 && player_health > 0) {
-        printf("Ваше здоровье: %d || Сіздің денсаулығыңыз: %d\n", player_health, player_health);
-        printf("Здоровье монстра: %d || Құбыжықтың денсаулығы: %d\n", monster_health, monster_health);
-
-        printf("1. Атаковать || Шабуыл жасау\n");
-        printf("2. Убежать || Қашу\n");
-        printf("Выберите действие: || Әрекетті таңдаңыз: ");
-        int choice;
-        scanf("%d", &choice);
-
-        if (choice == 1) {
-            damage = 5 + rand() % 10;
-            monster_damage = 3 + rand() % 5;
-
-            monster_health -= damage;
-            player_health -= monster_damage;
-
-            printf("Вы нанесли %d урона монстру! || Сіз құбыжыққа %d зиян келтірдіңіз!\n", damage, damage);
-            printf("Монстр атаковал вас и нанёс %d урона! || Құбыжық сізге шабуыл жасап, %d зиян келтірді!\n", monster_damage, monster_damage);
-        } else if (choice == 2) {
-            printf("Вы сбежали из боя! || Сіз ұрыс алаңынан қашып кеттіңіз!\n");
-            return;
+    while (enemy.health > 0 && player_health > 0) {
+        if (player_frozen) {
+            printf("Вы заморожены и пропускаете ход!\n");
+            player_frozen = 0; // Заморозка снимается после одного хода
         } else {
-            printf("Неверный выбор! || Қате таңдау!\n");
+            printf("Ваше здоровье: %d\n", player_health);
+            printf("Здоровье врага: %d\n", enemy.health);
+            printf("1. Атаковать\n");
+            printf("2. Убежать\n");
+            printf("Выберите действие: ");
+            int choice;
+            scanf("%d", &choice);
+
+            if (choice == 1) {
+                int damage = 10 + rand() % 5;
+                printf("Вы нанесли %d урона врагу!\n", damage);
+                enemy.health -= damage;
+
+                if (strcmp(location, "Огненная") == 0 && rand() % 100 < (int)(enemy.effect_chance * 100)) {
+                    player_burning = 5 + rand() % 5; // Игрок "горит"
+                    printf("Вы горите! В следующий ход получите %d урона.\n", player_burning);
+                }
+            } else if (choice == 2) {
+                printf("Вы сбежали из боя!\n");
+                return;
+            } else {
+                printf("Неверный выбор!\n");
+            }
+        }
+
+        // Атака врага
+        if (enemy.health > 0) {
+            player_health -= enemy.damage;
+            printf("Враг атаковал вас и нанёс %d урона!\n", enemy.damage);
+
+            if (strcmp(location, "Ледяная") == 0 && rand() % 100 < (int)(enemy.effect_chance * 100)) {
+                player_frozen = 1; // Игрок "заморожен"
+                printf("Вы заморожены и пропустите следующий ход!\n");
+            }
+        }
+
+        // Урон от горения
+        if (player_burning > 0) {
+            printf("Вы получили %d урона от горения!\n", player_burning);
+            player_health -= player_burning;
+            player_burning = 0; // Эффект горения снимается
         }
     }
 
     if (player_health > 0) {
-        printf("Вы победили монстра! || Сіз құбыжықты жеңдіңіз!\n");
-        int coins_reward = 10 + rand() % 10;
-        player_coins += coins_reward;
-        printf("Вы получили %d монет! || Сіз %d тиын алдыңыз!\n", coins_reward, coins_reward);
+        printf("Вы победили врага и получили %d монет!\n", enemy.coins_reward);
+        player_coins += enemy.coins_reward;
     } else {
-        printf("Вы проиграли! || Сіз жеңілдіңіз!\n");
+        printf("Вы погибли! Игра окончена.\n");
+        exit(0);
     }
 }
 
-void execute_command(char *command) {
-    char *args[MAX_ARGS];
-    int arg_count = 0;
+// Основная функция игры
+void dungeon_crawler() {
+    char *locations[] = {"Ледяная", "Огненная", "Пустынная"};
+    while (player_health > 0) {
+        printf("Выберите уровень подземелья:\n");
+        printf("1. Ледяная\n2. Огненная\n3. Пустынная\n");
+        printf("Ваш выбор: ");
+        int choice;
+        scanf("%d", &choice);
 
-    // Разделение строки на аргументы || Жолды аргументтерге бөлу
-    char *token = strtok(command, " ");
-    while (token != NULL && arg_count < MAX_ARGS - 1) {
-        args[arg_count++] = token;
-        token = strtok(NULL, " ");
-    }
-    args[arg_count] = NULL;
+        if (choice < 1 || choice > 3) {
+            printf("Неверный выбор!\n");
+            continue;
+        }
 
-    if (arg_count == 0) {
-        return; // Пустая строка || Бос жол
-    }
-
-    // Обработка специальных команд || Арнайы пәрмендерді өңдеу
-    if (strcmp(args[0], "game") == 0) {
-        dungeon_crawler_game();
-        return;
-    } else if (strcmp(args[0], "buy") == 0 && arg_count > 1) {
-        buy_command(args[1]);
-        return;
-    }
-
-    // Проверка, разблокирована ли команда || Пәрменнің ашылғанын тексеру
-    if (!is_command_unlocked(args[0])) {
-        printf("Команда %s заблокирована! Заработайте монеты в игре, чтобы её разблокировать. || %s пәрмені бұғатталған! Оны ашу үшін ойында тиын жинаңыз.\n", args[0], args[0]);
-        return;
-    }
-
-    pid_t pid = fork();
-    if (pid == 0) {
-        // Дочерний процесс || Бала процесс
-        execvp(args[0], args);
-        perror("Ошибка выполнения команды || Пәрменді орындау қатесі");
-        exit(EXIT_FAILURE);
-    } else if (pid > 0) {
-        // Родительский процесс || Ата-ана процесс
-        int status;
-        waitpid(pid, &status, 0);
-    } else {
-        perror("Ошибка создания процесса || Процесті құру қатесі");
+        Enemy enemy = generate_enemy(locations[choice - 1]);
+        fight_enemy(enemy, locations[choice - 1]);
     }
 }
 
@@ -165,25 +179,8 @@ int main() {
     srand(time(NULL));
     initialize_commands();
 
-    char input[MAX_INPUT];
-    printf("Добро пожаловать в kz_shell! || kz_shell-ге қош келдіңіз!\n");
-    printf("Все команды заблокированы. Играйте в игру 'game', чтобы разблокировать их! || Барлық пәрмендер бұғатталған. Оларды ашу үшін 'game' ойынын ойнаңыз!\n");
+    printf("Добро пожаловать в текстовую игру Dungeon Crawler!\n");
 
-    while (1) {
-        printf("kz_shell> ");
-        if (fgets(input, MAX_INPUT, stdin) == NULL) {
-            break;
-        }
-
-        // Удаляем символ новой строки || Жаңа жол таңбасын жою
-        input[strcspn(input, "\n")] = '\0';
-
-        if (strcmp(input, "exit") == 0) {
-            break;
-        }
-
-        execute_command(input);
-    }
-
+    dungeon_crawler();
     return 0;
 }
