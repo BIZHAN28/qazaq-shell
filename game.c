@@ -6,6 +6,7 @@
 #include "enemy.h"
 #include "battle.h"
 
+
 void start_game() {
     Player player;
     init_player(&player);

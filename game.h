@@ -2,17 +2,8 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <stdbool.h>
-
-// Структура, описывающая характеристики врага
-typedef struct {
-    char *name;
-    int health;
-    int attack;
-    int defense;
-    int money;
-    int effect_chance;  // Шанс на эффект (например, заморозка, огонь и т.д.)
-} Enemy;
+#include "player.h"
+#include "enemy.h"
 
 // Перечисление для типов локаций
 typedef enum {
@@ -20,16 +11,6 @@ typedef enum {
     FIRE,   // Огненная локация
     DESERT  // Пустынная локация
 } LocationType;
-
-// Структура, описывающая игрока
-typedef struct {
-    char *name;
-    int health;
-    int money;
-    int attack;
-    int defense;
-    LocationType current_location;  // Текущая локация игрока
-} Player;
 
 // Функции для игры
 void start_game(Player *player);
