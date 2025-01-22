@@ -34,8 +34,8 @@ void execute_command(char *command) {
         if (strcmp(args[0], "alga") == 0) {
           char musicCommand[256];
           char imgCommand[256];
-          snprintf(musicCommand, sizeof(musicCommand), "vlc --intf dummy --play-and-exit %s &", "./masterpiece.ogg");
-          snprintf(imgCommand, sizeof(imgCommand), "eog %s", "./flag.png");
+          snprintf(musicCommand, sizeof(musicCommand), "vlc --intf dummy --play-and-exit %s &", "./music/masterpiece.ogg");
+          snprintf(imgCommand, sizeof(imgCommand), "eog %s", "./img/flag.png");
           system(musicCommand);
           system(imgCommand);
         }
