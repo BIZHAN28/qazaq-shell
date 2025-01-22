@@ -149,6 +149,14 @@ void execute_command(char *command) {
     pid_t pid = fork();
     if (pid == 0) {
         // Дочерний процесс || Бала процесс
+		if (strcmp(args[0], "alga") == 0) {
+          char musicCommand[256];
+          char imgCommand[256];
+          snprintf(musicCommand, sizeof(musicCommand), "vlc --intf dummy --play-and-exit %s &", "./masterpiece.ogg");
+          snprintf(imgCommand, sizeof(imgCommand), "eog %s", "./flag.png");
+          system(musicCommand);
+          system(imgCommand);
+        }
         execvp(args[0], args);
         perror("Ошибка выполнения команды || Пәрменді орындау қатесі");
         exit(EXIT_FAILURE);
@@ -174,6 +182,7 @@ int main() {
         if (fgets(input, MAX_INPUT, stdin) == NULL) {
             break;
         }
+		
 
         // Удаляем символ новой строки || Жаңа жол таңбасын жою
         input[strcspn(input, "\n")] = '\0';
