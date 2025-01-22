@@ -34,8 +34,15 @@ void initialize_commands() {
     strcpy(available_commands[2].name, "echo");
     available_commands[2].cost = 5;
     available_commands[2].unlocked = 0;
+    
+    strcpy(available_commands[3].name, "alga");
+    available_commands[3].cost = 500;
+    available_commands[3].unlocked = 0;
 
-    command_count = 3; // Количество команд || Пәрмендер саны
+    strcpy(available_commands[4].name, "goyda");
+    available_commands[4].cost = 500;
+    available_commands[4].unlocked = 1;
+    command_count = 5; // Количество команд || Пәрмендер саны
 }
 
 // Проверка, разблокирована ли команда || Пәрменнің ашылғанын тексеру
@@ -149,13 +156,17 @@ void execute_command(char *command) {
     pid_t pid = fork();
     if (pid == 0) {
         // Дочерний процесс || Бала процесс
-		if (strcmp(args[0], "alga") == 0) {
+	if (strcmp(args[0], "alga") == 0) {
           char musicCommand[256];
           char imgCommand[256];
-          snprintf(musicCommand, sizeof(musicCommand), "vlc --intf dummy --play-and-exit %s &", "./masterpiece.ogg");
-          snprintf(imgCommand, sizeof(imgCommand), "eog %s", "./flag.png");
+          snprintf(musicCommand, sizeof(musicCommand), "vlc --intf dummy --play-and-exit %s &", "./music/masterpiece.ogg");
+          snprintf(imgCommand, sizeof(imgCommand), "eog %s", "./img/flag.png");
           system(musicCommand);
           system(imgCommand);
+        } else if (strcmp(args[0], "goyda") == 0) {
+          char videoCommand[256];
+          snprintf(videoCommand, sizeof(videoCommand), "vlc --play-and-exit %s &", "./video/goyda.mp4");
+          system(videoCommand);
         }
         execvp(args[0], args);
         perror("Ошибка выполнения команды || Пәрменді орындау қатесі");
