@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
-#include <conio.h>  // Для функции getch() в Windows (замените на ncurses для Linux)
+#include <ncurses.h>
 
 #define WIDTH 10
 #define HEIGHT 20
@@ -32,13 +32,15 @@ void initializeBoard() {
 }
 
 void printBoard() {
-    system("clear"); // Для Windows используйте system("cls");
+    clear();  // Очистить экран
+
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
-            printf("%c ", board[y][x]);
+            printw("%c ", board[y][x]);
         }
-        printf("\n");
+        printw("\n");
     }
+    refresh();  // Обновить экран
 }
 
 int checkCollision(int shape[], int xOffset, int yOffset) {
@@ -74,6 +76,11 @@ void placeShape(int shape[], int xOffset, int yOffset) {
 
 int main() {
     srand(time(NULL));
+    initscr();  // Инициализация ncurses
+    timeout(100);  // Время ожидания между циклами (в миллисекундах)
+    cbreak();  // Отключение буферизации ввода
+    noecho();  // Отключение вывода символов на экран при вводе
+
     initializeBoard();
     int shape[4];
     int xOffset = WIDTH / 2 - 1;
@@ -91,7 +98,8 @@ int main() {
         printBoard();
 
         // Ожидаем ввода
-        char key = getch();  // Используйте getch() в Windows, в Linux используйте библиотеку ncurses
+        int key = getch();  // Получаем нажатую клавишу
+
         if (key == 'q') {
             break;  // Выход из игры
         }
@@ -130,10 +138,8 @@ int main() {
         } else {
             yOffset++;
         }
-
-        // Ожидаем 1 секунду перед обновлением экрана
-        usleep(100000);
     }
 
+    endwin();  // Завершаем работу с ncurses
     return 0;
 }
