@@ -41,7 +41,7 @@ void initialize_commands() {
 
     strcpy(available_commands[4].name, "goyda");
     available_commands[4].cost = 500;
-    available_commands[4].unlocked = 1;
+    available_commands[4].unlocked = 0;
     command_count = 5; // Количество команд || Пәрмендер саны
 }
 
@@ -106,6 +106,7 @@ void dungeon_crawler_game() {
             printf("Монстр атаковал вас и нанёс %d урона! || Құбыжық сізге шабуыл жасап, %d зиян келтірді!\n", monster_damage, monster_damage);
         } else if (choice == 2) {
             printf("Вы сбежали из боя! || Сіз ұрыс алаңынан қашып кеттіңіз!\n");
+            exit(EXIT_FAILURE);
             return;
         } else {
             printf("Неверный выбор! || Қате таңдау!\n");
@@ -118,6 +119,7 @@ void dungeon_crawler_game() {
         player_coins += coins_reward;
         printf("Вы получили %d монет! || Сіз %d тиын алдыңыз!\n", coins_reward, coins_reward);
     } else {
+      exit(EXIT_FAILURE);
         printf("Вы проиграли! || Сіз жеңілдіңіз!\n");
     }
 }
